@@ -110,13 +110,13 @@ function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClos
 
 // ── Main App ─────────────────────────────────────────────────
 export default function App() {
-  const [loggedIn, setLoggedIn]       = useState(false);
-  const [currentUser, setCurrentUser] = useState("");
-  const [page, setPage]               = useState("dashboard");
-  const [collapsed, setCollapsed]     = useState(false);
-  const [mobileOpen, setMobileOpen]   = useState(false);
-  const [showLogout, setShowLogout]   = useState(false);
-  const [darkMode, setDarkMode]       = useState(false);
+  const [loggedIn, setLoggedIn]         = useState(false);
+  const [currentUser, setCurrentUser]   = useState("");
+  const [page, setPage]                 = useState("dashboard");
+  const [collapsed, setCollapsed]       = useState(false);
+  const [mobileOpen, setMobileOpen]     = useState(false);
+  const [showLogout, setShowLogout]     = useState(false);
+  const [darkMode, setDarkMode]         = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Apply dark mode to <html> data-theme attribute
@@ -144,8 +144,8 @@ export default function App() {
       <Login
         darkMode={darkMode}
         onToggleDark={toggleDark}
-        onLogin={(username) => {
-          setCurrentUser(username);
+        onLogin={(user) => {
+          setCurrentUser(user.name);
           setLoggedIn(true);
           setPage("dashboard");
         }}
@@ -269,6 +269,8 @@ export default function App() {
             setLoggedIn(false);
             setCurrentUser("");
             setPage("dashboard");
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
           }}
         />
       )}

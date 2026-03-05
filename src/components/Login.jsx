@@ -1,21 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 // ── Peephole Password Field ──────────────────────────────────
 function PeepholePasswordField({ value, onChange, onKeyDown }) {
   const [peepOpen, setPeepOpen]     = useState(false);
-  const [peepPos, setPeepPos]       = useState({ x: 50, y: 50 }); // percent
+  const [peepPos, setPeepPos]       = useState({ x: 50, y: 50 });
   const [sliding, setSliding]       = useState(false);
   const wrapRef                     = useRef(null);
   const inputRef                    = useRef(null);
 
-  // When toggling, animate the peephole sliding open/shut
   const togglePeep = () => {
     setSliding(true);
     setTimeout(() => setSliding(false), 400);
     setPeepOpen(p => !p);
   };
 
-  // On desktop: move peephole circle with mouse when open
   const handleMouseMove = (e) => {
     if (!peepOpen || !wrapRef.current) return;
     const rect = wrapRef.current.getBoundingClientRect();
@@ -27,7 +25,6 @@ function PeepholePasswordField({ value, onChange, onKeyDown }) {
     });
   };
 
-  // On mobile: touch move
   const handleTouchMove = (e) => {
     if (!peepOpen || !wrapRef.current) return;
     const touch = e.touches[0];
@@ -40,19 +37,18 @@ function PeepholePasswordField({ value, onChange, onKeyDown }) {
     });
   };
 
-  const peepSize = 72; // px diameter of hole
+  const peepSize = 72;
 
   return (
     <div className="peephole-wrap" ref={wrapRef}
       onMouseMove={handleMouseMove}
       onTouchMove={handleTouchMove}
     >
-      {/* The actual input — always rendered */}
       <span className="login-input-icon">🔒</span>
       <input
         ref={inputRef}
         className="login-input peephole-input"
-        type="text"               /* always text — overlay does the hiding */
+        type="text"
         placeholder="Enter your password"
         value={value}
         onChange={onChange}
@@ -61,13 +57,11 @@ function PeepholePasswordField({ value, onChange, onKeyDown }) {
         style={{ letterSpacing: peepOpen ? "normal" : "0.25em" }}
       />
 
-      {/* Dark overlay — covers the input when peephole is "closed" */}
       {!peepOpen && (
         <div
           className={`peep-overlay ${sliding ? "peep-closing" : ""}`}
           onClick={() => inputRef.current?.focus()}
         >
-          {/* Dots mimicking password chars */}
           <div className="peep-dots">
             {Array.from({ length: Math.max(value.length, 8) }).map((_, i) => (
               <span
@@ -83,18 +77,15 @@ function PeepholePasswordField({ value, onChange, onKeyDown }) {
         </div>
       )}
 
-      {/* Peephole cutout — only when open */}
       {peepOpen && (
         <div
           className={`peep-overlay peep-open ${sliding ? "peep-opening" : ""}`}
           style={{
-            /* CSS mask: transparent circle = see-through hole, rest = dark */
             WebkitMaskImage: `radial-gradient(circle ${peepSize / 2}px at ${peepPos.x}% ${peepPos.y}%, transparent 0%, transparent 48%, black 52%)`,
             maskImage:        `radial-gradient(circle ${peepSize / 2}px at ${peepPos.x}% ${peepPos.y}%, transparent 0%, transparent 48%, black 52%)`,
           }}
           onClick={() => inputRef.current?.focus()}
         >
-          {/* Peephole ring — glowing rim around the hole */}
           <div
             className="peep-ring"
             style={{
@@ -107,7 +98,6 @@ function PeepholePasswordField({ value, onChange, onKeyDown }) {
         </div>
       )}
 
-      {/* Toggle button */}
       <button
         className={`peep-btn ${peepOpen ? "peep-btn-open" : ""}`}
         onClick={togglePeep}
@@ -124,21 +114,49 @@ function PeepholePasswordField({ value, onChange, onKeyDown }) {
 
 // ── Login Page ───────────────────────────────────────────────
 export default function Login({ onLogin, darkMode, onToggleDark }) {
-  const [form, setForm]       = useState({ username: "", password: "" });
+  const [form, setForm]       = useState({ email: "", password: "" });
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!form.username || !form.password) {
+  const handleLogin = async () => {
+    if (!form.email || !form.password) {
       setError("Please fill in all fields.");
       return;
     }
     setError("");
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const response = await fetch("http://localhost:8000/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Invalid credentials.");
+        return;
+      }
+
+      // Save token and user for future requests
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      onLogin(data.user);
+
+    } catch (err) {
+      setError("Cannot connect to server. Is Laravel running?");
+    } finally {
       setLoading(false);
-      onLogin(form.username);
-    }, 1200);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -189,17 +207,17 @@ export default function Login({ onLogin, darkMode, onToggleDark }) {
 
           <div className="login-form">
 
-            {/* Username */}
+            {/* Email */}
             <div className="login-form-group">
-              <label className="login-label">Username</label>
+              <label className="login-label">Email</label>
               <div className="login-input-wrap">
-                <span className="login-input-icon">👤</span>
+                <span className="login-input-icon">✉️</span>
                 <input
                   className="login-input"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={form.username}
-                  onChange={e => setForm({ ...form, username: e.target.value })}
+                  type="email"
+                  placeholder="Enter your email"
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
                   onKeyDown={handleKeyDown}
                 />
               </div>
@@ -228,9 +246,6 @@ export default function Login({ onLogin, darkMode, onToggleDark }) {
               {loading ? <span className="login-spinner" /> : "Sign In →"}
             </button>
 
-            <div className="login-hint">
-              💡 Hint: any username &amp; password works
-            </div>
           </div>
 
           <div className="login-footer">
