@@ -155,7 +155,7 @@ export default function App() {
 
   // ── SCREEN 2: Main App ─────────────────────────────────────
   return (
-    <div className="app-wrapper">
+    <div className="app-wrapper" style={{ display: "flex", minHeight: "100vh", width: "100vw", position: "relative" }}>
 
       {/* Mobile Overlay */}
       {mobileOpen && (
@@ -214,7 +214,17 @@ export default function App() {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className={`main-content ${collapsed ? "expanded" : ""}`}>
+      <main
+        className={`main-content ${collapsed ? "expanded" : ""}`}
+        style={{
+          marginLeft: collapsed ? "var(--sidebar-collapsed)" : "var(--sidebar-w)",
+          width: collapsed ? "calc(100vw - var(--sidebar-collapsed))" : "calc(100vw - var(--sidebar-w))",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          transition: "var(--transition)",
+        }}
+      >
 
         {/* Top Bar */}
         <div className="topbar">
