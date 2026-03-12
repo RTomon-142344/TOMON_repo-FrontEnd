@@ -3,8 +3,6 @@ cd TOMON_repo-FrontEnd
 
 npm install
 
-copy .env.example .env
-
 npm run dev
 
 
