@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import './styles/global.css';
-import Login from './components/Login';
-import Dashboard from './components/Dashboard';
-import ProgramList from './components/ProgramList';
-import SubjectList from './components/SubjectList';
+import Login         from './components/Login';
+import Register      from './components/Register';
+import Dashboard     from './components/Dashboard';
+import ProgramList   from './components/ProgramList';
+import SubjectList   from './components/SubjectList';
+import WeatherWidget from './components/WeatherWidget';
 
 // ── Logout Confirmation Modal ────────────────────────────────
 function LogoutConfirm({ onConfirm, onCancel }) {
@@ -31,7 +33,6 @@ function LogoutConfirm({ onConfirm, onCancel }) {
 function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClose }) {
   const ref = useRef(null);
 
-  // Close when clicking outside
   useEffect(() => {
     const handler = (e) => {
       if (ref.current && !ref.current.contains(e.target)) onClose();
@@ -42,21 +43,14 @@ function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClos
 
   return (
     <div className="profile-dropdown" ref={ref}>
-
-      {/* Header — user info */}
       <div className="dropdown-header">
-        <div className="dropdown-avatar">
-          {currentUser.charAt(0).toUpperCase()}
-        </div>
+        <div className="dropdown-avatar">{currentUser.charAt(0).toUpperCase()}</div>
         <div>
           <div className="dropdown-name">{currentUser}</div>
           <div className="dropdown-role">Administrator</div>
         </div>
       </div>
-
       <div className="dropdown-body">
-
-        {/* Profile */}
         <div className="dropdown-item" onClick={onClose}>
           <span className="dropdown-item-icon">👤</span>
           <div>
@@ -64,8 +58,6 @@ function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClos
             <div className="dropdown-item-sub">View your account info</div>
           </div>
         </div>
-
-        {/* Settings */}
         <div className="dropdown-item" onClick={onClose}>
           <span className="dropdown-item-icon">⚙️</span>
           <div>
@@ -73,28 +65,18 @@ function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClos
             <div className="dropdown-item-sub">Manage preferences</div>
           </div>
         </div>
-
         <div className="dropdown-divider" />
-
-        {/* Dark Mode Toggle */}
         <div className="dark-toggle-row" onClick={onToggleDark}>
           <span className="dropdown-item-icon">{darkMode ? "☀️" : "🌙"}</span>
           <div style={{ flex: 1 }}>
-            <div className="dropdown-item-label">
-              {darkMode ? "Light Mode" : "Dark Mode"}
-            </div>
-            <div className="dropdown-item-sub">
-              {darkMode ? "Switch to light theme" : "Switch to dark theme"}
-            </div>
+            <div className="dropdown-item-label">{darkMode ? "Light Mode" : "Dark Mode"}</div>
+            <div className="dropdown-item-sub">{darkMode ? "Switch to light theme" : "Switch to dark theme"}</div>
           </div>
           <div className={`toggle-switch ${darkMode ? "on" : ""}`}>
             <div className="toggle-knob" />
           </div>
         </div>
-
         <div className="dropdown-divider" />
-
-        {/* Logout */}
         <div className="dropdown-item danger" onClick={() => { onClose(); onLogout(); }}>
           <span className="dropdown-item-icon">🚪</span>
           <div>
@@ -102,7 +84,6 @@ function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClos
             <div className="dropdown-item-sub">Sign out of your account</div>
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -112,6 +93,7 @@ function ProfileDropdown({ currentUser, darkMode, onToggleDark, onLogout, onClos
 export default function App() {
   const [loggedIn, setLoggedIn]         = useState(false);
   const [currentUser, setCurrentUser]   = useState("");
+  const [authPage, setAuthPage]         = useState("login");
   const [page, setPage]                 = useState("dashboard");
   const [collapsed, setCollapsed]       = useState(false);
   const [mobileOpen, setMobileOpen]     = useState(false);
@@ -119,53 +101,101 @@ export default function App() {
   const [darkMode, setDarkMode]         = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Apply dark mode to <html> data-theme attribute
+  // ── Restore session on page refresh ───────────────────────
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const user  = localStorage.getItem("user");
+    if (token && user) {
+      try {
+        const parsed = JSON.parse(user);
+        setCurrentUser(parsed.name);
+        setLoggedIn(true);
+      } catch {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
+    }
+  }, []);
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
   const toggleDark = () => setDarkMode(d => !d);
 
+  const handleLogin = (user) => {
+    setCurrentUser(user.name);
+    setLoggedIn(true);
+    setPage("dashboard");
+  };
+
+  const handleLogout = () => {
+    setShowLogout(false);
+    setLoggedIn(false);
+    setCurrentUser("");
+    setPage("dashboard");
+    setAuthPage("login");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  };
+
   const navItems = [
     { id: "dashboard", icon: "🏠", label: "Dashboard" },
     { id: "programs",  icon: "🎓", label: "Programs"  },
     { id: "subjects",  icon: "📚", label: "Subjects"  },
+    { id: "weather",   icon: "🌤️", label: "Weather"   },
   ];
 
   const pageTitles = {
     dashboard: "Dashboard",
     programs:  "Program Offerings",
     subjects:  "Subject Offerings",
+    weather:   "Weather Forecast",
   };
 
-  // ── SCREEN 1: Login ────────────────────────────────────────
+  // Sidebar widths — 0 on mobile (CSS handles it via media query)
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  const sidebarW = isMobile ? "0px" : collapsed ? "70px" : "260px";
+
+  // ── SCREEN 1: Auth ─────────────────────────────────────────
   if (!loggedIn) {
+    if (authPage === "register") {
+      return (
+        <Register
+          darkMode={darkMode}
+          onToggleDark={toggleDark}
+          onLogin={handleLogin}
+          onSwitchToLogin={() => setAuthPage("login")}
+        />
+      );
+    }
     return (
       <Login
         darkMode={darkMode}
         onToggleDark={toggleDark}
-        onLogin={(user) => {
-          setCurrentUser(user.name);
-          setLoggedIn(true);
-          setPage("dashboard");
-        }}
+        onLogin={handleLogin}
+        onSwitchToRegister={() => setAuthPage("register")}
       />
     );
   }
 
   // ── SCREEN 2: Main App ─────────────────────────────────────
   return (
-    <div className="app-wrapper" style={{ display: "flex", minHeight: "100vh", width: "100vw", position: "relative" }}>
+    <div style={{ display: "flex", minHeight: "100vh", width: "100vw" }}>
 
-      {/* Mobile Overlay */}
       {mobileOpen && (
         <div className="mobile-overlay" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* SIDEBAR */}
       <aside className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}>
-
-        {/* Logo */}
         <div className="sidebar-logo">
           <div className="logo-icon">A</div>
           {!collapsed && (
@@ -176,7 +206,6 @@ export default function App() {
           )}
         </div>
 
-        {/* Nav Items */}
         <nav className="sidebar-nav">
           <div className="nav-section">
             {!collapsed && <div className="nav-section-title">Navigation</div>}
@@ -193,7 +222,6 @@ export default function App() {
           </div>
         </nav>
 
-        {/* User + Logout */}
         <div className="sidebar-footer">
           {!collapsed && (
             <div className="sidebar-user-label">
@@ -207,24 +235,22 @@ export default function App() {
           </button>
         </div>
 
-        {/* Collapse Toggle */}
         <button className="sidebar-toggle" onClick={() => setCollapsed(c => !c)}>
           {collapsed ? "›" : "‹"}
         </button>
       </aside>
 
       {/* MAIN CONTENT */}
-      <main
-        className={`main-content ${collapsed ? "expanded" : ""}`}
-        style={{
-          marginLeft: collapsed ? "var(--sidebar-collapsed)" : "var(--sidebar-w)",
-          width: collapsed ? "calc(100vw - var(--sidebar-collapsed))" : "calc(100vw - var(--sidebar-w))",
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          transition: "var(--transition)",
-        }}
-      >
+      <main style={{
+        marginLeft: sidebarW,
+        width: `calc(100vw - ${sidebarW})`,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        transition: "margin-left 0.3s cubic-bezier(0.4,0,0.2,1), width 0.3s cubic-bezier(0.4,0,0.2,1)",
+        background: "var(--bg)",
+        overflow: "hidden",
+      }}>
 
         {/* Top Bar */}
         <div className="topbar">
@@ -235,11 +261,8 @@ export default function App() {
               <div className="topbar-breadcrumb">AcadPortal › {pageTitles[page]}</div>
             </div>
           </div>
-
           <div className="topbar-right">
             <div className="topbar-badge">AY 2024–2025</div>
-
-            {/* Avatar with dropdown */}
             <div className="avatar-wrap">
               <div
                 className={`topbar-avatar ${dropdownOpen ? "open" : ""}`}
@@ -248,7 +271,6 @@ export default function App() {
               >
                 {currentUser.charAt(0).toUpperCase()}
               </div>
-
               {dropdownOpen && (
                 <ProfileDropdown
                   currentUser={currentUser}
@@ -267,21 +289,18 @@ export default function App() {
           {page === "dashboard" && <Dashboard />}
           {page === "programs"  && <ProgramList />}
           {page === "subjects"  && <SubjectList />}
+          {page === "weather"   && (
+            <div style={{ maxWidth: 700 }}>
+              <WeatherWidget />
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Logout Confirmation Modal */}
       {showLogout && (
         <LogoutConfirm
           onCancel={() => setShowLogout(false)}
-          onConfirm={() => {
-            setShowLogout(false);
-            setLoggedIn(false);
-            setCurrentUser("");
-            setPage("dashboard");
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
-          }}
+          onConfirm={handleLogout}
         />
       )}
     </div>
