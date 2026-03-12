@@ -1,7 +1,10 @@
 # Frontend Setup
 cd TOMON_repo-FrontEnd
+
 npm install
-npm run dev 
+
+npm run dev
+
 
 # React + Vite
 
