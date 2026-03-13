@@ -1,10 +1,7 @@
-// src/services/weatherApi.js
-// Uses Open-Meteo (free, no API key) + Open-Meteo Geocoding API
-
 const GEO_URL     = 'https://geocoding-api.open-meteo.com/v1';
 const WEATHER_URL = 'https://api.open-meteo.com/v1';
 
-// WMO weather code → description + emoji
+
 const WMO_CODES = {
   0:  { desc: 'Clear sky',          emoji: '☀️'  },
   1:  { desc: 'Mainly clear',       emoji: '🌤️'  },
@@ -44,7 +41,7 @@ export async function geocodeCity(city) {
 
 // ── Reverse geocode coords → city name ───────────────────────
 export async function reverseGeocode(lat, lon) {
-  // Open-Meteo doesn't have reverse geocoding, use bigdatacloud (free, no key)
+  
   const res  = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
   const data = await res.json();
   return {
